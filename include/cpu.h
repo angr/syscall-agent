@@ -39,12 +39,24 @@ typedef CPUX86State CPUArchState;
 typedef struct CPUState {
 	void *opaque;
 	uint64_t random_seed;
+	CPUArchState *env_ptr;
 } CPUState;
 
 CPUState *env_cpu(CPUArchState *env);
 
 // unused
+#include "panic.h"
 void *first_cpu;
 bool parallel_cpus;
-#define CPU_NEXT(x) (0)
-#define cpu_copy(x) (x)
+#define CPU_NEXT(x) (PANIC_UNREACHED(), 0)
+#define cpu_copy(x) (PANIC_UNREACHED(), x)
+#define cpu_x86_load_seg(x, y, z) PANIC_UNREACHED()
+#define rcu_register_thread() PANIC_UNREACHED()
+#define tcg_register_thread() PANIC_UNREACHED()
+#define rcu_unregister_thread() PANIC_UNREACHED()
+#define qemu_guest_random_seed_thread_part2(x) PANIC_UNREACHED()
+#define qemu_guest_random_seed_thread_part1() (PANIC_UNREACHED(), 0)
+#define tb_flush(x) PANIC_UNREACHED()
+#define object_property_set_bool(w, x, y, z) PANIC_UNREACHED()
+#define object_unref(x) PANIC_UNREACHED()
+#define OBJECT(x) (PANIC_UNREACHED(), x)

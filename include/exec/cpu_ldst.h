@@ -3,16 +3,7 @@
 #include <stdint.h>
 
 #include "cpu.h"
-
-uint8_t ldub_p(uint8_t *ptr);
-uint16_t lduw_le_p(uint16_t *ptr);
-uint32_t ldl_le_p(uint32_t *ptr);
-uint64_t ldq_le_p(uint64_t *ptr);
-
-void stb_p(uint8_t *ptr, uint8_t data);
-void stw_le_p(uint16_t *ptr, uint16_t data);
-void stl_le_p(uint32_t *ptr, uint32_t data);
-void stq_le_p(uint64_t *ptr, uint64_t data);
+#include "bswap.h"
 
 // some of these are normally defined in cpu-all.h but they are important for
 // the intercept footprint to stay inside this file
