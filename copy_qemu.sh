@@ -23,7 +23,7 @@ for subdir in linux-user util include include/qemu include/fpu include/exec incl
 	mkdir qemu/$subdir
 done
 
-for fname in include/qemu/compiler.h linux-user/errno_defs.h linux-user/fd-trans.c linux-user/fd-trans.h include/glib-compat.h linux-user/ioctls.h linux-user/linux_loop.h linux-user/qemu.h include/qemu/selfmap.h linux-user/socket.h linux-user/syscall.c linux-user/syscall_defs.h linux-user/syscall_types.h linux-user/uname.c linux-user/uname.h include/exec/user/abitypes.h include/exec/user/thunk.h linux-user/host/x86_64/hostdep.h linux-user/host/x86_64/safe-syscall.inc.S linux-user/safe-syscall.S thunk.c include/qemu/cutils.h linux-user/uaccess.c include/fpu/softfloat-types.h include/qemu/bswap.h include/qemu/host-utils.h include/qemu/bitops.h include/qemu/atomic.h linux-user/signal.c linux-user/signal-common.h; do
+for fname in include/qemu/compiler.h linux-user/errno_defs.h linux-user/fd-trans.c linux-user/fd-trans.h include/glib-compat.h linux-user/ioctls.h linux-user/linux_loop.h linux-user/qemu.h include/qemu/selfmap.h linux-user/socket.h linux-user/syscall.c linux-user/syscall_defs.h linux-user/syscall_types.h linux-user/uname.c linux-user/uname.h include/exec/user/abitypes.h include/exec/user/thunk.h linux-user/host/x86_64/hostdep.h linux-user/host/x86_64/safe-syscall.inc.S linux-user/safe-syscall.S thunk.c include/qemu/cutils.h linux-user/uaccess.c include/fpu/softfloat-types.h include/qemu/bswap.h include/qemu/host-utils.h include/qemu/bitops.h include/qemu/atomic.h linux-user/signal.c linux-user/signal-common.h linux-user/strace.c linux-user/strace.list; do
 	cp $1/$fname qemu/$fname
 done
 
