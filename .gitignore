@@ -1,2 +1,4 @@
 qemu
 *.o
+main
+syscall_defs.txt

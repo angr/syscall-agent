@@ -7,6 +7,9 @@ OBJECTS=qemu/linux-user/syscall.c.o qemu/linux-user/uname.c.o qemu/linux-user/fd
 main: $(OBJECTS)
 	$(CC) $? $(LFLAGS) -o $@
 
+syscall_defs.txt:
+	./extract_syscall_defs.py > $@
+
 clean:
 	rm -f $(OBJECTS) main
 
