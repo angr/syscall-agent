@@ -2,10 +2,10 @@ CFLAGS=-std=gnu17 -D_GNU_SOURCE -Iinclude -DTARGET_I386 -DTARGET_X86_64 -Iqemu/i
 # add -DHOST_WORDS_BIGENDIAN and -DTARGET_WORDS_BIGENDIAN as appropriate
 LFLAGS=$(shell pkg-config --libs glib-2.0) -lpthread -lrt
 
-OBJECTS=qemu/linux-user/syscall.c.o qemu/linux-user/uname.c.o qemu/linux-user/fd-trans.c.o qemu/linux-user/safe-syscall.S.o qemu/linux-user/uaccess.c.o qemu/thunk.c.o qemu/linux-user/signal.c.o qemu/linux-user/strace.c.o main.c.o
+OBJECTS=qemu/linux-user/syscall.c.o qemu/linux-user/uname.c.o qemu/linux-user/fd-trans.c.o qemu/linux-user/safe-syscall.S.o qemu/thunk.c.o qemu/linux-user/signal.c.o qemu/linux-user/strace.c.o main.c.o
 
 main: $(OBJECTS)
-	$(CC) $? $(LFLAGS) -o $@
+	$(CC) $^ $(LFLAGS) -o $@
 
 syscall_defs.txt:
 	./extract_syscall_defs.py > $@
@@ -14,7 +14,7 @@ clean:
 	rm -f $(OBJECTS) main
 
 %.S.o: %.S
-	$(CC) -c $? $(CFLAGS) -o $@
+	$(CC) -c $^ $(CFLAGS) -o $@
 
 %.c.o: %.c
-	$(CC) -c $? $(CFLAGS) -o $@
+	$(CC) -c $^ $(CFLAGS) -o $@
