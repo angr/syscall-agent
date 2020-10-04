@@ -228,6 +228,7 @@ void sync_one_memory(target_ulong addr, void *data, size_t size) {
     args->size = size;
     memcpy(args->data, data, size);
     zmq_send(sock, &args, sizeof(*args) + size, 0);
+    zmq_recv(sock, &args, 1, 0); // dummy
     free(args);
 }
 
@@ -284,6 +285,7 @@ void set_auxv(uint64_t *auxv, uint32_t auxv_count) {
 void dispatch_set_auxv(struct args_set_auxv *arg) {
     // see above re: alignment
     set_auxv(arg->auxv, arg->argc);
+    zmq_send(sock, "done", 4, 0);
 }
 
 //
@@ -307,11 +309,15 @@ int main(int argc, char **argv) {
         printf("Failed to connect to %s\n", argv[1]);
         return 1;
     }
+    zmq_send(sock, "hello", 5, 0);
     init();
 
     while (1) {
         char buffer[4096];
-        zmq_recv(sock, buffer, 4096, 0);
+        if (zmq_recv(sock, buffer, 4096, 0) < 0) {
+            fprintf(stderr, "Error reading from socket\n");
+            abort();
+        }
         uint16_t op = *(uint16_t*)buffer;
         if (op == OP_exit) {
             break;
