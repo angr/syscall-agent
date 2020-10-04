@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <setjmp.h>
+#include <zmq.h>
 
 #include "qemu/osdep.h"
 #include "qemu.h"
@@ -22,6 +23,63 @@ int qemu_loglevel;
 
 jmp_buf jmpout;
 int cur_sysno;
+void *sock;
+
+enum ipc_op {
+    OP_exit = 0,
+    OP_syscall_main = 1,
+    OP_syscall_return = 2,
+    OP_set_auxv = 3,
+    OP_target_strlen = 4,
+    OP_target_strlen_ret = 5,
+    OP_retrieve_memory = 6,
+    OP_retrieve_memory_ret = 7,
+    OP_sync_memory = 8
+}
+
+struct __attribute__((packed)) args_syscall_main {
+    uint16_t op;
+    uint32_t sysno;
+    uint32_t argc;
+    uint64_t args[0];
+};
+
+struct __attribute__((packed)) args_qword {
+    uint16_t op;
+    uint64_t val;
+};
+
+struct __attribute__((packed)) args_set_auxv {
+    uint16_t op;
+    uint32_t argc;
+    uint64_t auxv[0];
+};
+
+struct __attribute__((packed)) args_retrieve_memory {
+    uint16_t op;
+    uint64_t addr;
+    uint64_t size;
+    uint8_t writing;
+};
+
+enum retrieve_result {
+    RESULT_OK = 0,
+    RESULT_ABORT = 1,
+    RESULT_FAULT = 2,
+};
+
+struct __attribute__((packed)) args_retrieve_memory_ret {
+    uint16_t op;
+    uint8_t result;
+    char data[0];
+};
+
+struct __attribute__((packed)) args_sync_memory {
+    uint16_t op;
+    uint64_t addr;
+    uint64_t size;
+    char data[0];
+}
 
 //
 // Memory record API
@@ -43,7 +101,7 @@ memrecord *memory_new(void *data, target_ulong addr, size_t size, bool writing) 
         newrec->addr = addr;
         newrec->size = size;
         newrec->writing = writing;
-        newrec->data = data;
+        newrec->data = data; // we take ownership of the data pointer - it is malloced for us
         return newrec;
 }
 
@@ -111,21 +169,66 @@ void memory_reset() {
 //
 
 target_ulong _target_strlen(target_ulong addr) {
-    // ipc
+    struct args_qword args;
+    args.op = OP_target_strlen;
+    args.val = addr;
+    zmq_send(sock, &args, sizeof(args), 0);
+
+    zmq_recv(sock, &args, sizeof(args), 0);
+    if (args.op != OP_target_strlen_ret) {
+        fprintf(stderr, "Strlen response got back opcode %#hx\n", args.op);
+        abort();
+    }
+
+    return args.val;
 }
 
 void *retrieve_memory(target_ulong addr, target_ulong size, bool writing) {
-    void *result = NULL;
-    //ipc
+    struct args_retrieve_memory args;
+    struct args_retrieve_memory_ret *ret;
+    ret = malloc(sizeof(*ret) + size);
 
-    if (result == NULL) {
+    args.op = OP_retrieve_memory;
+    args.addr = addr;
+    args.size = size;
+    args.writing = writing;
+    zmq_send(sock, &args, sizeof(args), 0);
+
+    int read_size = zmq_recv(sock, ret, sizeof(*ret) + size, 0);
+    if (ret.op != OP_retrieve_memory_ret) {
+        fprintf(stderr, "Retrieve response got back opcode %#hx\n", args.op);
+        abort();
+    }
+
+    if (ret.result == RESULT_ABORT) {
         longjmp(jmpout, 1);
     }
+
+    if (ret.result == RESULT_FAULT) {
+        return NULL;
+    }
+
+    if (read_size != sizeof(*ret) + size) {
+        fprintf(stderr, "Retrieve(%#x) response got back size %#x\n", size, read_size);
+        abort();
+    }
+
+    void *result = malloc(size);
+    memcpy(result, ret.data);
+    free(ret);
     return result;
 }
 
 void sync_one_memory(target_ulong addr, void *data, size_t size) {
-    // ipc
+    struct args_sync_memory *args;
+    args = malloc(sizeof(*args) + size);
+
+    args->op = OP_sync_memory;
+    args->addr = addr;
+    args->size = size;
+    memcpy(args->data, data, size);
+    zmq_send(sock, &args, sizeof(*args) + size, 0);
+    free(args);
 }
 
 void sync_memory() {
@@ -144,7 +247,7 @@ void sync_memory() {
 // IPC inbound (entry points)
 //
 
-target_ulong syscall_main(int sysno, target_ulong *args, int argc) {
+target_ulong syscall_main(int sysno, uint64_t *args, int argc) {
     abi_long result = -1;
     cur_sysno = sysno;
     if (setjmp(jmpout) == 0) {
@@ -158,8 +261,15 @@ target_ulong syscall_main(int sysno, target_ulong *args, int argc) {
 
     return result;
 }
+void dispatch_syscall_main(struct args_syscall_main *arg) {
+    target_ulong result = syscall_main(arg->sysno, arg->args, arg->argc);
+    struct args_syscall_qword ret;
+    ret.op = OP_syscall_return;
+    ret.val = result;
+    zmq_send(sock, ret, sizeof(ret), 0);
+}
 
-void set_auxv(target_ulong *auxv, int auxv_count) {
+void set_auxv(uint64_t *auxv, uint32_t auxv_count) {
     free(task_auxv);
     task_auxv = malloc(sizeof(target_ulong) * 2 * (auxv_count + 1));
     for (int i = 0; i < auxv_count; i++) {
@@ -168,6 +278,10 @@ void set_auxv(target_ulong *auxv, int auxv_count) {
     }
     task_auxv[auxv_count] = 0;
     task_auxv[auxv_count+1] = 0;
+}
+
+void dispatch_set_auxv(struct args_set_auxv *arg) {
+    set_auxv(arg.auxv, arg.argc);
 }
 
 //
@@ -180,8 +294,44 @@ void init() {
 }
 
 int main(int argc, char **argv) {
+    if (argc < 2) {
+        printf("Usage: %s [zmq socket]\n", argv[0]);
+        return 1;
+    }
+    void *context = zmq_ctx_new();
+    sock = zmq_socket(context, ZMQ_REQ);
+
+    if (zmq_connect(sock, argv[1]) != 0) {
+        printf("Failed to connect to %s\n", argv[1]);
+        return 1;
+    }
     init();
-    // ipc loop
+
+    while (1) {
+        char buffer[4096];
+        zmq_recv(sock, buffer, 4096, 0);
+        uint16_t op = *(uint16_t*)buffer;
+        if (op == OP_exit) {
+            break;
+        }
+
+        switch (op) {
+            case OP_syscall_main:
+                dispatch_syscall_main((struct args_syscall_main *)buffer);
+                break;
+            case OP_set_auxv:
+                dispatch_set_auxv((struct args_set_auxv *)buffer);
+                break;
+            default:
+                fprintf(stderr, "Got unknown opcode %#hx\n", op);
+                break;
+        }
+    }
+
+    fprintf(stderr, "Goodbye!\n");
+
+    zmq_close(sock);
+    zmq_ctx_destroy(context);
     return 0;
 }
 
