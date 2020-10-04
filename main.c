@@ -35,7 +35,7 @@ enum ipc_op {
     OP_retrieve_memory = 6,
     OP_retrieve_memory_ret = 7,
     OP_sync_memory = 8
-}
+};
 
 struct __attribute__((packed)) args_syscall_main {
     uint16_t op;
@@ -79,7 +79,7 @@ struct __attribute__((packed)) args_sync_memory {
     uint64_t addr;
     uint64_t size;
     char data[0];
-}
+};
 
 //
 // Memory record API
@@ -195,16 +195,16 @@ void *retrieve_memory(target_ulong addr, target_ulong size, bool writing) {
     zmq_send(sock, &args, sizeof(args), 0);
 
     int read_size = zmq_recv(sock, ret, sizeof(*ret) + size, 0);
-    if (ret.op != OP_retrieve_memory_ret) {
+    if (ret->op != OP_retrieve_memory_ret) {
         fprintf(stderr, "Retrieve response got back opcode %#hx\n", args.op);
         abort();
     }
 
-    if (ret.result == RESULT_ABORT) {
+    if (ret->result == RESULT_ABORT) {
         longjmp(jmpout, 1);
     }
 
-    if (ret.result == RESULT_FAULT) {
+    if (ret->result == RESULT_FAULT) {
         return NULL;
     }
 
@@ -214,7 +214,7 @@ void *retrieve_memory(target_ulong addr, target_ulong size, bool writing) {
     }
 
     void *result = malloc(size);
-    memcpy(result, ret.data);
+    memcpy(result, ret->data, size);
     free(ret);
     return result;
 }
@@ -262,11 +262,12 @@ target_ulong syscall_main(int sysno, uint64_t *args, int argc) {
     return result;
 }
 void dispatch_syscall_main(struct args_syscall_main *arg) {
+    // issue? does it matter if args is misaligned?
     target_ulong result = syscall_main(arg->sysno, arg->args, arg->argc);
-    struct args_syscall_qword ret;
+    struct args_qword ret;
     ret.op = OP_syscall_return;
     ret.val = result;
-    zmq_send(sock, ret, sizeof(ret), 0);
+    zmq_send(sock, &ret, sizeof(ret), 0);
 }
 
 void set_auxv(uint64_t *auxv, uint32_t auxv_count) {
@@ -281,7 +282,8 @@ void set_auxv(uint64_t *auxv, uint32_t auxv_count) {
 }
 
 void dispatch_set_auxv(struct args_set_auxv *arg) {
-    set_auxv(arg.auxv, arg.argc);
+    // see above re: alignment
+    set_auxv(arg->auxv, arg->argc);
 }
 
 //
