@@ -295,6 +295,8 @@ void dispatch_set_auxv(struct args_set_auxv *arg) {
 void init() {
     thread_cpu = &cpu;
     cpu.opaque = &task;
+
+    syscall_init();
 }
 
 int main(int argc, char **argv) {
