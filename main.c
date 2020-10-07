@@ -227,8 +227,8 @@ void sync_one_memory(target_ulong addr, void *data, size_t size) {
     args->addr = addr;
     args->size = size;
     memcpy(args->data, data, size);
-    zmq_send(sock, &args, sizeof(*args) + size, 0);
-    zmq_recv(sock, &args, 1, 0); // dummy
+    zmq_send(sock, args, sizeof(*args) + size, 0);
+    zmq_recv(sock, args, 1, 0); // dummy
     free(args);
 }
 
