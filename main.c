@@ -19,7 +19,7 @@ CPUState cpu;
 CPUArchState cpu_arch;
 TaskState task;
 target_ulong *task_auxv;
-int qemu_loglevel;
+int qemu_loglevel = LOG_STRACE;
 
 jmp_buf jmpout;
 int cur_sysno;
@@ -97,17 +97,24 @@ typedef struct memrecord {
 memrecord *memory;
 
 memrecord *memory_new(void *data, target_ulong addr, size_t size, bool writing) {
-        memrecord *newrec = malloc(sizeof(memrecord));
-        newrec->addr = addr;
-        newrec->size = size;
-        newrec->writing = writing;
-        newrec->data = data; // we take ownership of the data pointer - it is malloced for us
-        return newrec;
+    if (data == NULL) {
+        return NULL;
+    }
+    memrecord *newrec = malloc(sizeof(memrecord));
+    newrec->addr = addr;
+    newrec->size = size;
+    newrec->writing = writing;
+    newrec->data = data; // we take ownership of the data pointer - it is malloced for us
+    return newrec;
 }
 
-void memory_insert(memrecord **loc, memrecord *data) {
+bool memory_insert(memrecord **loc, memrecord *data) {
+    if (data == NULL) {
+        return false;
+    }
     data->next = *loc;
     *loc = data;
+    return true;
 }
 
 // returns a pointer to the memrecord pointer for the first entry containing bytes at or after addr, or a pointer to the final null pointer if the address comes after all the resident records
@@ -401,7 +408,9 @@ int page_check_range(target_ulong addr, target_ulong size_, int flags) {
         ssize_t subsize;
         if (*cur == NULL) {
             // fell off the end
-            memory_insert(cur, memory_new(retrieve_memory(addr, size, flags), addr, size, flags));
+            if (!memory_insert(cur, memory_new(retrieve_memory(addr, size, flags), addr, size, flags))) {
+                return -1;
+            }
             subsize = size;
         } else if ((*cur)->addr > addr) {
             // need to retrieve data from the start of the range
@@ -410,7 +419,9 @@ int page_check_range(target_ulong addr, target_ulong size_, int flags) {
                 subsize = size;
             }
 
-            memory_insert(cur, memory_new(retrieve_memory(addr, subsize, flags), addr, subsize, flags));
+            if (!memory_insert(cur, memory_new(retrieve_memory(addr, subsize, flags), addr, subsize, flags))) {
+                return -1;
+            }
         } else {
             // data is present. scan forward.
             (*cur)->writing |= flags;
@@ -423,7 +434,7 @@ int page_check_range(target_ulong addr, target_ulong size_, int flags) {
 
     memory_coalesce();
 
-    return 1;
+    return 0;
 }
 
 unsigned long qemu_getauxval(unsigned long key) {
