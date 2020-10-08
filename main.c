@@ -519,6 +519,7 @@ void fork_end(int x) { PANIC_UNREACHED(); }
 
 // sigreturn is unsupported
 long do_rt_sigreturn(CPUArchState *env) { PANIC_UNREACHED(); }
+long do_sigreturn(CPUArchState *env) { PANIC_UNREACHED(); }
 
 // exit is unsupported
 void cpu_exit(CPUState *cpu) { PANIC_UNREACHED(); }

@@ -1,4 +1,6 @@
-CFLAGS=-std=gnu17 -D_GNU_SOURCE -Iinclude -DTARGET_I386 -DTARGET_X86_64 -Iqemu/include -Iqemu/include/qemu -Iqemu/linux-user -Iqemu/linux-user/host/x86_64 -Iqemu/linux-user/x86_64 -Iqemu/target/i386 $(shell pkg-config --cflags glib-2.0)
+CFLAGS=-std=gnu17 -D_GNU_SOURCE -DCONFIG_USER_ONLY -Iinclude -Iqemu/include -Iqemu/include/qemu -Iqemu/linux-user -Iqemu/linux-user/host/x86_64 $(shell pkg-config --cflags glib-2.0) -g -O0
+CFLAGS+=-DTARGET_MIPS -DTARGET_ABI_MIPSO32 -Iqemu/target/mips -Iqemu/linux-user/mips
+#CFLAGS+=-DTARGET_AMD64 -DTARGET_X86 -Iqemu/target/i386 -Iqemu/linux-user/x86_64
 # add -DHOST_WORDS_BIGENDIAN and -DTARGET_WORDS_BIGENDIAN as appropriate
 LFLAGS=$(shell pkg-config --libs glib-2.0) -lpthread -lrt -lzmq
 

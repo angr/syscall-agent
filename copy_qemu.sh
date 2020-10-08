@@ -40,3 +40,6 @@ for arch in i386 x86_64 aarch64 mips mips64; do #arm ppc missing syscall_nr.h?
 		cp $1/target/$arch/cpu-param.h qemu/target/$arch
 	fi
 done
+
+#mkdir qemu/linux-user/arm/nwfpe
+#cp $1/linux-user/arm/nwfpe/fpa11.h qemu/linux-user/arm/nwfpe
