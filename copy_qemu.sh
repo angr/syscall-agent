@@ -6,15 +6,19 @@ if [[ -z "$1" ]]; then
 fi
 
 pushd $1
-rm -rf build
-./configure --target-list=arm-linux-user,i386-linux-user,x86_64-linux-user,aarch64-linux-user,mips-linux-user,mips64-linux-user,ppc-linux-user
-cd build
-./ninjatool -t ninja2make --omit clean dist uninstall cscope TAGS ctags < build.ninja > Makefile.ninja
-for sup in $(grep syscall.*\.h: Makefile.ninja | cut -d: -f1); do
-	make -f Makefile.ninja $sup
-	arch=$(cut -d- -f2 <<<$sup)
-	cp $sup ../linux-user/$arch/
-done
+# copied from the qemu build so we don't have to depend on python to configure
+cd linux-user/arm
+/bin/sh syscallhdr.sh syscall.tbl syscall_nr.h common,oabi
+cd ../i386
+/bin/sh syscallhdr.sh syscall_32.tbl syscall_32_nr.h i386
+cd ../x86_64
+/bin/sh syscallhdr.sh syscall_64.tbl syscall_64_nr.h common,64
+cd ../mips
+/bin/sh syscallhdr.sh syscall_o32.tbl syscall_o32_nr.h o32 '' 4000
+cd ../mips64
+/bin/sh syscallhdr.sh syscall_n64.tbl syscall_n64_nr.h n64 '' TARGET_SYSCALL_OFFSET
+cd ../ppc
+/bin/sh syscallhdr.sh syscall.tbl syscall_nr.h common,nospu,32
 popd
 
 rm -rf qemu
