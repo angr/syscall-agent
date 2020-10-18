@@ -24,6 +24,7 @@
 #include <linux/utsname.h>
 #include <netinet/in.h>
 
+#define GLIB_VERSION_2_48 GLIB_VERSION_2_26
 #include "glib-compat.h"
 #include "compiler.h"
 
@@ -82,8 +83,6 @@
 #endif
 
 #define FMT_pid "%d"
-
-#define GLIB_VERSION_2_48 GLIB_VERSION_2_26
 
 // no idea why this is necessary but strace.c needs it
 #include "qemu/bitops.h"
