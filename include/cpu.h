@@ -3,7 +3,7 @@
 #include "exec/cpu-defs.h"
 #include "exec/cpu-all.h"
 
-#if defined(TARGET_X86)
+#if defined(TARGET_I386)
 #define R_ESP 0
 #define R_EIP 1
 #define R_EAX 2
@@ -24,9 +24,12 @@ typedef struct SegmentCache {
     uint32_t flags;
 } SegmentCache;
 
+#define VM_MASK 1
+
 typedef struct CPUX86State {
 	target_ulong regs[R_NUM];
 	SegmentCache segs[R_NUM_SEG], gdt, ldt;
+        target_ulong eflags;
 } CPUX86State;
 
 typedef CPUX86State CPUArchState;

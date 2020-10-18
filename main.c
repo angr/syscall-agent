@@ -528,3 +528,8 @@ void preexit_cleanup(CPUArchState *env, int code) { PANIC_UNREACHED(); }
 // h2g is only used for mmap, signals, reading /proc/self/maps, and shmat
 target_ulong h2g(unsigned long ptr) { PANIC_UNREACHED(); }
 bool h2g_valid(unsigned long ptr) { PANIC_UNREACHED(); }
+
+#ifdef TARGET_I386
+//vm86 is unsupported
+int do_vm86(CPUX86State *env, long subfunction, abi_ulong vm86_addr) { PANIC_UNREACHED(); }
+#endif
