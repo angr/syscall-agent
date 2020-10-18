@@ -83,5 +83,7 @@
 
 #define FMT_pid "%d"
 
+#define GLIB_VERSION_2_48 GLIB_VERSION_2_26
+
 // no idea why this is necessary but strace.c needs it
 #include "qemu/bitops.h"
