@@ -62,6 +62,17 @@
 #define O_LARGEFILE 0
 #endif
 
+#ifndef RTC_VL_READ
+#define RTC_VL_READ -1
+#endif
+#ifndef RTC_VL_CLR
+#define RTC_VL_CLR -1
+#endif
+
+#ifndef MAP_HUGETLB
+#define MAP_HUGETLB 0
+#endif
+
 #if UINTPTR_MAX == UINT32_MAX
 # define HOST_LONG_BITS 32
 #elif UINTPTR_MAX == UINT64_MAX
