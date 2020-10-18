@@ -1,9 +1,9 @@
-CFLAGS=-std=gnu17 -D_GNU_SOURCE -DCONFIG_USER_ONLY -Iinclude -Iqemu/include -Iqemu/include/qemu -Iqemu/linux-user $(shell pkg-config --cflags glib-2.0)
+CFLAGS+=-std=gnu99 -D_GNU_SOURCE -DCONFIG_LINUX -DCONFIG_USER_ONLY -Iinclude -Iqemu/include -Iqemu/include/qemu -Iqemu/linux-user $(shell pkg-config --cflags glib-2.0)
 ifdef DEBUG
 CFLAGS+=-g -O0
 endif
 
-LFLAGS=$(shell pkg-config --libs glib-2.0) -lpthread -lrt -lzmq
+LFLAGS+=$(shell pkg-config --libs glib-2.0) -lpthread -lrt -lzmq
 
 EXECUTABLE="syscall-agent-$(TARGET)"
 
