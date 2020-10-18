@@ -27,7 +27,8 @@
 #define GLIB_VERSION_2_48 GLIB_VERSION_2_26
 #include "glib-compat.h"
 #ifndef g_autoptr
-#define g_autoptr(x) x
+// ???
+#define g_autoptr(x) x*
 #endif
 #include "compiler.h"
 
