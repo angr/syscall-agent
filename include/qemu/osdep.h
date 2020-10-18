@@ -78,6 +78,13 @@
 #define MAP_HUGETLB 0
 #endif
 
+#ifndef FALLOC_FL_KEEP_SIZE
+#define FALLOC_FL_KEEP_SIZE -1
+#endif
+#ifndef FALLOC_FL_PUNCH_HOLE
+#define FALLOC_FL_PUNCH_HOLE -1
+#endif
+
 #if UINTPTR_MAX == UINT32_MAX
 # define HOST_LONG_BITS 32
 #elif UINTPTR_MAX == UINT64_MAX
